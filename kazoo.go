@@ -29,7 +29,7 @@ import (
 var (
 	apiURL = "http://localhost:8000/v2"
 	token  = ""
-	ver    = "1.0.0"
+	ver    = "1.0.1"
 )
 
 var (
