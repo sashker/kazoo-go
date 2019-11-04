@@ -71,7 +71,7 @@ type (
 )
 
 //GetClicktocall fetches parameters of selected clicktocall
-func (api *Clicktocall) GetClicktocall(ctx context.Context, acc, id string) (c2c *Clicktocall, err error) {
+func (api *ClicktocallAPIService) GetClicktocall(ctx context.Context, acc, id string) (c2c *Clicktocall, err error) {
 	var response struct {
 		Data Clicktocall `json:"data"`
 		ResponseEnvelope
@@ -224,7 +224,7 @@ func (api *ClicktocallAPIService) ListClick2Calls(ctx context.Context, acc strin
 }
 
 //ExecuteClicktocall executes non-blocking version of clicktocall
-func (api *Clicktocall) ExecuteClicktocall(ctx context.Context, acc, id, contact string) (cer *ClicktocallExecuteResponse, err error) {
+func (api *ClicktocallAPIService) ExecuteClicktocall(ctx context.Context, acc, id, contact string) (cer *ClicktocallExecuteResponse, err error) {
 	var response struct {
 		Data ClicktocallExecuteResponse `json:"data"`
 		ResponseEnvelope
@@ -266,7 +266,7 @@ func (api *Clicktocall) ExecuteClicktocall(ctx context.Context, acc, id, contact
 }
 
 //DeleteClicktocall deletes selected clicktocall
-func (api *Clicktocall) DeleteClicktocall(ctx context.Context, acc, id string) (c2c *Clicktocall, err error) {
+func (api *ClicktocallAPIService) DeleteClicktocall(ctx context.Context, acc, id string) (c2c *Clicktocall, err error) {
 	var response struct {
 		Data Clicktocall `json:"data"`
 		ResponseEnvelope
