@@ -108,6 +108,7 @@ type APIClient struct {
 	//SupAPI          *SupApiService
 	StorageAPI *StorageAPIService
 	LimitsAPI  *LimitsAPIService
+	ClicktocallAPI *ClicktocallAPIService
 }
 
 type service struct {
@@ -158,6 +159,7 @@ func NewAPIClient(cfg *Configuration) (api *APIClient, err error) {
 	c.CallflowsAPI = (*CallflowsAPIService)(&c.common)
 	c.StorageAPI = (*StorageAPIService)(&c.common)
 	c.LimitsAPI = (*LimitsAPIService)(&c.common)
+	c.ClicktocallAPI = (*ClicktocallAPIService)(&c.common)
 
 	return c, nil
 }
