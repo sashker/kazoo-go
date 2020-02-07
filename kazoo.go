@@ -52,7 +52,7 @@ type ResponseEnvelope struct {
 	AuthToken string `json:"auth_token,omitempty"`
 	Status    string `json:"status,omitempty"`     //one of "success", "error" or "fatal"
 	Message   string `json:"message,omitempty"`    //optional message that's should clarify
-	Error     string    `json:"error,omitempty"`      //error code
+	Error     string `json:"error,omitempty"`      //error code
 	RequestID string `json:"request_id,omitempty"` //for debugging purposes
 	PageSize  int    `json:"page_size,omitempty"`
 	Revision  string `json:"revision"`
@@ -99,6 +99,7 @@ type APIClient struct {
 
 	// API Services
 	AccountsAPI     *AccountsAPIService
+	AppsStoreAPI    *AppsStoreAPIService
 	ChannelsAPI     *ChannelsAPIService
 	RecordingsAPI   *RecordingsAPIService
 	PhoneNumbersAPI *PhoneNumbersAPIService
@@ -106,8 +107,8 @@ type APIClient struct {
 	DevicesAPI      *DevicesAPIService
 	CallflowsAPI    *CallflowsAPIService
 	//SupAPI          *SupApiService
-	StorageAPI *StorageAPIService
-	LimitsAPI  *LimitsAPIService
+	StorageAPI     *StorageAPIService
+	LimitsAPI      *LimitsAPIService
 	ClicktocallAPI *ClicktocallAPIService
 }
 
@@ -151,6 +152,7 @@ func NewAPIClient(cfg *Configuration) (api *APIClient, err error) {
 
 	// API Services
 	c.AccountsAPI = (*AccountsAPIService)(&c.common)
+	c.AppsStoreAPI = (*AppsStoreAPIService)(&c.common)
 	c.ChannelsAPI = (*ChannelsAPIService)(&c.common)
 	c.RecordingsAPI = (*RecordingsAPIService)(&c.common)
 	c.PhoneNumbersAPI = (*PhoneNumbersAPIService)(&c.common)
@@ -417,7 +419,7 @@ func reportError(format string, a ...interface{}) error {
 
 //If we get response with error code (i.e. >=300) we can easily report error
 func prepareError(resp *http.Response) error {
-	var errData	ErrorResponseEnvelope
+	var errData ErrorResponseEnvelope
 
 	err := readBody(resp, &errData)
 	if err != nil {
