@@ -90,6 +90,67 @@ func (api *PhoneNumbersAPIService) CreatePhoneNumber(ctx context.Context, acc st
 	return number, nil
 }
 
+//DeletePhoneNumber deletes a phone number from a specified account and returns a PhoneNumber object in response
+func (api *PhoneNumbersAPIService) DeletePhoneNumber(ctx context.Context, acc string, num string) (number *PhoneNumber, err error) {
+	var response struct {
+		Data PhoneNumber `json:"data"`
+		ResponseEnvelope
+	}
+
+	if num == "" {
+		return nil, reportError("number is required field")
+	}
+
+	params := Request{
+		CTX:    ctx,
+		Method: "DELETE",
+		Path:   api.client.cfg.BasePath + "/accounts/" + acc + "/phone_numbers/" + num,
+	}
+
+	/*	reqBody := RequestEnvelope{
+			Data: input,
+		}
+
+		jsonString, err := json.Marshal(reqBody)
+		if err != nil {
+			return nil, reportError("can't marshall body for request")
+		}
+
+		body, err := setBody(jsonString, "json")
+		if err != nil {
+			return nil, reportError("can't prepare body for the request")
+		}
+
+		params.PostBody = body*/
+
+	req, err := api.client.prepareRequest(&params)
+	if err != nil {
+		return nil, reportError("Can't prepare a request %s", err)
+	}
+
+	resp, err := api.client.callAPI(ctx, req)
+	if err != nil || resp == nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		return nil, reportError("Status: %v, Body: %s", resp.Status, bodyBytes)
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+
+	decErr := decoder.Decode(&response)
+	if decErr != nil {
+		return nil, reportError("Can't decode response: %v", decErr)
+	}
+
+	number = &response.Data
+
+	return number, nil
+}
+
 func (api *PhoneNumbersAPIService) ListPhoneNumbers(ctx context.Context, acc string, disablePagination bool) (numbers []PhoneNumber, err error) {
 	var response struct {
 		Data AccountPhoneNumbersResponse `json:"data"`
