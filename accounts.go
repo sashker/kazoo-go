@@ -3,6 +3,7 @@ package kazooapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"io/ioutil"
 )
 
@@ -131,8 +132,11 @@ func (api *AccountsAPIService) CreateAccount(ctx context.Context, input *Account
 	}
 
 	resp, err := api.client.callAPI(ctx, req)
-	if err != nil || resp == nil {
+	if err != nil {
 		return nil, err
+	}
+	if resp == nil {
+		return nil, errors.New("nil response from the server")
 	}
 	defer resp.Body.Close()
 
