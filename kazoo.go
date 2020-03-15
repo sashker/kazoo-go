@@ -206,7 +206,10 @@ func contains(haystack []string, needle string) bool {
 
 func readBody(resp *http.Response, v interface{}) error {
 	if err := json.NewDecoder(resp.Body).Decode(&v); err != nil {
-		resp.Body.Close()
+		err := resp.Body.Close()
+		if err != nil {
+			return err
+		}
 		return err
 	}
 	return resp.Body.Close()
@@ -238,18 +241,25 @@ func (c *APIClient) callAPI(ctx context.Context, request *http.Request) (resp *h
 	if resp != nil {
 		switch resp.StatusCode {
 		case 401:
-			go c.Authenticate(ctx)
+			err := c.Authenticate(ctx)
+			if err != nil {
+				return nil, err
+			}
 			request.Header.Add("X-Auth-Token", token)
 			resp, err = c.cfg.HTTPClient.Do(request)
 			if err != nil {
 				return nil, err
 			}
 		case 0:
-			return nil, errors.New("Have not recieved a response from the server")
+			return nil, errors.New("have not recieved a response from the server")
+		default:
+			return resp, nil
 		}
+	} else {
+		return nil, NewError("ServerError", "nil response", nil)
 	}
 
-	return resp, nil
+	return nil, err
 }
 
 //ChangeBasePath enables switching to mocks
@@ -293,13 +303,13 @@ func (c *APIClient) prepareRequest(req *Request) (httpRequest *http.Request, err
 	}
 
 	// Setup path and query parameters
-	url, err := url.Parse(req.Path)
+	reqURL, err := url.Parse(req.Path)
 	if err != nil {
 		return nil, err
 	}
 
 	// Adding Query Param
-	query := url.Query()
+	query := reqURL.Query()
 	for k, v := range req.QueryParams {
 		for _, iv := range v {
 			query.Add(k, iv)
@@ -307,13 +317,13 @@ func (c *APIClient) prepareRequest(req *Request) (httpRequest *http.Request, err
 	}
 
 	// Encode the parameters.
-	url.RawQuery = query.Encode()
+	reqURL.RawQuery = query.Encode()
 
 	// Generate a new request
 	if body != nil {
-		httpRequest, err = http.NewRequest(req.Method, url.String(), body)
+		httpRequest, err = http.NewRequest(req.Method, reqURL.String(), body)
 	} else {
-		httpRequest, err = http.NewRequest(req.Method, url.String(), nil)
+		httpRequest, err = http.NewRequest(req.Method, reqURL.String(), nil)
 	}
 	if err != nil {
 		return nil, err
@@ -364,9 +374,7 @@ func (c *APIClient) prepareRequest(req *Request) (httpRequest *http.Request, err
 
 // Set request body from an interface{}
 func setBody(body interface{}, contentType string) (bodyBuf *bytes.Buffer, err error) {
-	if bodyBuf == nil {
-		bodyBuf = &bytes.Buffer{}
-	}
+	bodyBuf = &bytes.Buffer{}
 
 	if reader, ok := body.(io.Reader); ok {
 		_, err = bodyBuf.ReadFrom(reader)
@@ -377,7 +385,7 @@ func setBody(body interface{}, contentType string) (bodyBuf *bytes.Buffer, err e
 	} else if jsonCheck.MatchString(contentType) {
 		err = json.NewEncoder(bodyBuf).Encode(body)
 	} else if xmlCheck.MatchString(contentType) {
-		xml.NewEncoder(bodyBuf).Encode(body)
+		err = xml.NewEncoder(bodyBuf).Encode(body)
 	}
 
 	if err != nil {
@@ -450,7 +458,7 @@ func addFile(w *multipart.Writer, fieldName, path string) error {
 //Kazoo API server for both api_key and password
 //authentication methods
 func (c *APIClient) Authenticate(ctx context.Context) error {
-	req := Request{
+	req := Request {
 		Method: "PUT",
 		CTX:    ctx,
 	}
@@ -509,16 +517,21 @@ func (c *APIClient) Authenticate(ctx context.Context) error {
 
 	authResponse, err := c.cfg.HTTPClient.Do(r)
 	//authResponse, err := c.callAPI(ctx, r)
-	if err != nil || authResponse == nil {
+	if err != nil{
 		return err
 	}
-	defer authResponse.Body.Close()
+	if authResponse != nil {
+		defer authResponse.Body.Close()
+	}
 
 	switch authResponse.StatusCode {
 	case 201:
 		//Succesfull authentication
 		authdata := AuthResponse{}
-		readBody(authResponse, &authdata)
+		err := readBody(authResponse, &authdata)
+		if err != nil {
+			return NewError("BodyError", "", err)
+		}
 
 		token = authdata.AuthToken
 		go authTokenExpire()
@@ -526,10 +539,7 @@ func (c *APIClient) Authenticate(ctx context.Context) error {
 		return nil
 
 	default:
-		//bodyBytes, _ := ioutil.ReadAll(authResponse.Body)
-		return reportError("wrong response code during authentication: %d", authResponse.StatusCode)
-
-		//return reportError("Wrong authorization response from the server")
+		return NewError("AuthenticationError", string(authResponse.StatusCode), nil)
 	}
 
 	//return nil

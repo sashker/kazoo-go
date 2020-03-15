@@ -8,25 +8,34 @@ import (
 
 type PhoneNumbersAPIService service
 
+const (
+	ErrPhoneNumbers = "PhoneNumbersErr"
+)
+
+var (
+	ErrNumberNotFound   = NewError(ErrPhoneNumbers, "not found", nil)
+	ErrUnknownException = NewError(ErrPhoneNumbers, "unknown exception", nil)
+)
+
 type (
 	PhoneNumber struct {
-		ID       string   `json:"id"`
-		State    string   `json:"state"`
-		Features []string `json:"features"`
-		AssignedTo string `json:"assigned_to"`
-		Created Timestamp `json:"created"`
-		Updated Timestamp `json:"updated"`
-		readOnly struct {
+		ID         string    `json:"id"`
+		State      string    `json:"state"`
+		Features   []string  `json:"features"`
+		AssignedTo string    `json:"assigned_to"`
+		Created    Timestamp `json:"created"`
+		Updated    Timestamp `json:"updated"`
+		readOnly   struct {
 			state    string   `json:"state,omitempty"`
-			created string `json:"created,omitempty"`
-			modified string `json:"modified,omitempty"`
+			created  string   `json:"created,omitempty"`
+			modified string   `json:"modified,omitempty"`
 			features []string `json:"features,omitempty"`
 		} `json:"_read_only,omitempty"`
 	}
 
 	AccountPhoneNumbersResponse struct {
-		CascadeQuantity int64 `json:"cascade_quantity"`
-		Numbers map[string]PhoneNumber `json:"numbers"`
+		CascadeQuantity int64                  `json:"cascade_quantity"`
+		Numbers         map[string]PhoneNumber `json:"numbers"`
 	}
 )
 
@@ -46,21 +55,21 @@ func (api *PhoneNumbersAPIService) CreatePhoneNumber(ctx context.Context, acc st
 		Path:   api.client.cfg.BasePath + "/accounts/" + acc + "/phone_numbers/" + num,
 	}
 
-/*	reqBody := RequestEnvelope{
-		Data: input,
-	}
+	/*	reqBody := RequestEnvelope{
+			Data: input,
+		}
 
-	jsonString, err := json.Marshal(reqBody)
-	if err != nil {
-		return nil, reportError("can't marshall body for request")
-	}
+		jsonString, err := json.Marshal(reqBody)
+		if err != nil {
+			return nil, reportError("can't marshall body for request")
+		}
 
-	body, err := setBody(jsonString, "json")
-	if err != nil {
-		return nil, reportError("can't prepare body for the request")
-	}
+		body, err := setBody(jsonString, "json")
+		if err != nil {
+			return nil, reportError("can't prepare body for the request")
+		}
 
-	params.PostBody = body*/
+		params.PostBody = body*/
 
 	req, err := api.client.prepareRequest(&params)
 	if err != nil {
@@ -134,21 +143,24 @@ func (api *PhoneNumbersAPIService) DeletePhoneNumber(ctx context.Context, acc st
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 300 {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		return nil, reportError("Status: %v, Body: %s", resp.Status, bodyBytes)
+	switch resp.StatusCode {
+	case 200:
+		decoder := json.NewDecoder(resp.Body)
+
+		decErr := decoder.Decode(&response)
+		if decErr != nil {
+			return nil, reportError("Can't decode response: %v", decErr)
+		}
+
+		number = &response.Data
+
+		return number, nil
+	case 404:
+		return nil, ErrNumberNotFound
+	default:
+		return nil, UnmarshalKazooError(resp.Body)
 	}
 
-	decoder := json.NewDecoder(resp.Body)
-
-	decErr := decoder.Decode(&response)
-	if decErr != nil {
-		return nil, reportError("Can't decode response: %v", decErr)
-	}
-
-	number = &response.Data
-
-	return number, nil
 }
 
 func (api *PhoneNumbersAPIService) ListPhoneNumbers(ctx context.Context, acc string, disablePagination bool) (numbers []PhoneNumber, err error) {
