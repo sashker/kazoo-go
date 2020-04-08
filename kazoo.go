@@ -15,6 +15,7 @@ import (
 	"fmt"
 	"io"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"os"
@@ -133,6 +134,14 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 //Requires a userAgent string describing your application.
 // optionally a custom http.Client to allow for advanced features such as caching.
 func NewAPIClient(cfg *Configuration) (api *APIClient, err error) {
+	var timeout = time.Second * 5
+	var netTransport = &http.Transport{
+		DialContext: (&net.Dialer{
+			Timeout: timeout,
+		}).DialContext,
+		TLSHandshakeTimeout: timeout,
+		ResponseHeaderTimeout: timeout,
+	}
 
 	if cfg.APIKey == "" {
 		//return nil, reportError("You have to specify an API key or username/password/realm")
@@ -143,7 +152,8 @@ func NewAPIClient(cfg *Configuration) (api *APIClient, err error) {
 
 	if cfg.HTTPClient == nil {
 		cfg.HTTPClient = http.DefaultClient
-		cfg.HTTPClient.Timeout = time.Second * 5
+		cfg.HTTPClient.Timeout = timeout
+		cfg.HTTPClient.Transport = netTransport
 	}
 
 	c := &APIClient{}
@@ -194,7 +204,7 @@ func selectHeaderAccept(accepts []string) string {
 	return strings.Join(accepts, ",")
 }
 
-// contains is a case insenstive match, finding needle in a haystack
+// contains is a case insensitive match, finding needle in a haystack
 func contains(haystack []string, needle string) bool {
 	for _, a := range haystack {
 		if strings.ToLower(a) == strings.ToLower(needle) {
@@ -233,9 +243,15 @@ func (c *APIClient) callAPI(ctx context.Context, request *http.Request) (resp *h
 		}
 		request.Header.Add("X-Auth-Token", token)
 		resp, err = c.cfg.HTTPClient.Do(request)
+		if err != nil {
+			return nil, err
+		}
 	} else {
 		request.Header.Add("X-Auth-Token", token)
 		resp, err = c.cfg.HTTPClient.Do(request)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	if resp != nil {
