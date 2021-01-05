@@ -2,6 +2,7 @@ package kazooapi
 
 import (
 	"net/http"
+	"time"
 )
 
 // contextKeys are used to identify the type of value in the context.
@@ -54,6 +55,7 @@ type Configuration struct {
 	APIKey        string            `json:"api_key,omitempty"`
 	BasicAuth     BasicAuth
 	HTTPClient    *http.Client
+	ClientTimeout time.Duration
 }
 
 //NewConfiguration prepares a default configuration structure for an APIClient
