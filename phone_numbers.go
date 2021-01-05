@@ -13,7 +13,9 @@ const (
 )
 
 var (
+	ErrNumberExists   = NewError(ErrPhoneNumbers, "number exists", nil)
 	ErrNumberNotFound   = NewError(ErrPhoneNumbers, "not found", nil)
+	ErrInvalidStateTransition = NewError(ErrPhoneNumbers, "invalid transition status", nil)
 	ErrUnknownException = NewError(ErrPhoneNumbers, "unknown exception", nil)
 )
 
@@ -82,25 +84,32 @@ func (api *PhoneNumbersAPIService) CreatePhoneNumber(ctx context.Context, acc st
 	}
 	defer resp.Body.Close()
 
-	if resp.StatusCode >= 300 {
-		bodyBytes, _ := ioutil.ReadAll(resp.Body)
-		return nil, reportError("Status: %v, Body: %s", resp.Status, bodyBytes)
+	switch resp.StatusCode {
+	case 201:
+		decoder := json.NewDecoder(resp.Body)
+
+		decErr := decoder.Decode(&response)
+		if decErr != nil {
+			return nil, reportError(decErr.Error())
+		}
+
+		number = &response.Data
+
+		return number, nil
+	case 400:
+		return nil, UnmarshalKazooError(resp.Body)
+	case 409:
+		return nil, ErrNumberExists
+	default:
+		return nil, UnmarshalKazooError(resp.Body)
 	}
 
-	decoder := json.NewDecoder(resp.Body)
-
-	decErr := decoder.Decode(&response)
-	if decErr != nil {
-		return nil, reportError("Can't decode response: %v", decErr)
-	}
-
-	number = &response.Data
 
 	return number, nil
 }
 
 //DeletePhoneNumber deletes a phone number from a specified account and returns a PhoneNumber object in response
-func (api *PhoneNumbersAPIService) DeletePhoneNumber(ctx context.Context, acc string, num string) (number *PhoneNumber, err error) {
+func (api *PhoneNumbersAPIService) DeletePhoneNumber(ctx context.Context, acc string, num string, hard bool) (number *PhoneNumber, err error) {
 	var response struct {
 		Data PhoneNumber `json:"data"`
 		ResponseEnvelope
@@ -114,6 +123,10 @@ func (api *PhoneNumbersAPIService) DeletePhoneNumber(ctx context.Context, acc st
 		CTX:    ctx,
 		Method: "DELETE",
 		Path:   api.client.cfg.BasePath + "/accounts/" + acc + "/phone_numbers/" + num,
+	}
+
+	if hard {
+		params.Path = api.client.cfg.BasePath + "/accounts/" + acc + "/phone_numbers/" + num + "?hard=true"
 	}
 
 	/*	reqBody := RequestEnvelope{
@@ -149,12 +162,24 @@ func (api *PhoneNumbersAPIService) DeletePhoneNumber(ctx context.Context, acc st
 
 		decErr := decoder.Decode(&response)
 		if decErr != nil {
-			return nil, reportError("Can't decode response: %v", decErr)
+			return nil, reportError(decErr.Error())
 		}
 
 		number = &response.Data
 
 		return number, nil
+	case 400:
+		decoder := json.NewDecoder(resp.Body)
+		kazooErr := &genericKazooError{}
+
+		decErr := decoder.Decode(kazooErr)
+		if decErr != nil {
+			return nil, UnmarshalKazooError(resp.Body)
+		}
+		if kazooErr.Message == "invalid_state_transition" {
+			return nil, ErrInvalidStateTransition
+		}
+		return nil, ErrUnknownException
 	case 404:
 		return nil, ErrNumberNotFound
 	default:
