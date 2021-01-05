@@ -134,7 +134,11 @@ func (t *Timestamp) UnmarshalJSON(b []byte) error {
 //Requires a userAgent string describing your application.
 // optionally a custom http.Client to allow for advanced features such as caching.
 func NewAPIClient(cfg *Configuration) (api *APIClient, err error) {
-	var timeout = time.Second * 5
+	var timeout = cfg.ClientTimeout
+	if cfg.ClientTimeout == 0 {
+		timeout = time.Second * 5
+	}
+
 	var netTransport = &http.Transport{
 		DialContext: (&net.Dialer{
 			Timeout: timeout,
