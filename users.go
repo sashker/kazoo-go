@@ -94,6 +94,50 @@ func (api *UsersAPIService) CreateUser(ctx context.Context, acc string, input *U
 	return usr, nil
 }
 
+func (api *UsersAPIService) DeleteUser(ctx context.Context, acc, id string) (usr *User, err error) {
+	var response struct {
+		Data User `json:"data"`
+		ResponseEnvelope
+	}
+
+	if acc == "" {
+		return nil, reportError("account id is required field")
+	}
+
+	params := Request{
+		CTX:    ctx,
+		Method: "DELETE",
+		Path:   api.client.cfg.BasePath + "/accounts/" + acc + "/users/" + id,
+	}
+
+	req, err := api.client.prepareRequest(&params)
+	if err != nil {
+		return nil, reportError("Can't prepare a request %s", err)
+	}
+
+	resp, err := api.client.callAPI(ctx, req)
+	if err != nil || resp == nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode >= 300 {
+		bodyBytes, _ := ioutil.ReadAll(resp.Body)
+		return nil, reportError("Status: %v, Body: %s", resp.Status, bodyBytes)
+	}
+
+	decoder := json.NewDecoder(resp.Body)
+
+	decErr := decoder.Decode(&response)
+	if decErr != nil {
+		return nil, reportError("Can't decode response: %v", decErr)
+	}
+
+	usr = &response.Data
+
+	return usr, nil
+}
+
 func (api *UsersAPIService) ListUsers(ctx context.Context, acc string, disablePagination bool) (users []User, err error) {
 	var response struct {
 		Data []User `json:"data"`

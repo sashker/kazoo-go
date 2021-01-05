@@ -87,6 +87,46 @@ func (api *AccountsAPIService) GetAccount(ctx context.Context, id string) (acc *
 	return acc, nil
 }
 
+func (api *AccountsAPIService) DeleteAccount(ctx context.Context, id string) (err error) {
+	var response struct {
+		Data Account `json:"data"`
+		ResponseEnvelope
+	}
+
+	if id == "" {
+		return reportError("account id is required field")
+	}
+
+	params := Request{
+		CTX:    ctx,
+		Method: "DELETE",
+		Path:   api.client.cfg.BasePath + "/accounts/" + id,
+	}
+
+	req, err := api.client.prepareRequest(&params)
+	if err != nil {
+		return reportError("Can't prepare a request %s", err)
+	}
+
+	resp, err := api.client.callAPI(ctx, req)
+	if err != nil || resp == nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	err = readBody(resp, &response)
+	if err != nil {
+		return reportError("Can't decode response: %v", err)
+	}
+
+	if resp.StatusCode >= 300 {
+		return prepareError(resp)
+	}
+
+
+	return nil
+}
+
 func (api *AccountsAPIService) CreateAccount(ctx context.Context, input *Account) (acc *Account, err error) {
 	var (
 		response struct {
