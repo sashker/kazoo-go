@@ -25,7 +25,7 @@ func TestPhoneNumbersService_DeletePhoneNumber(t *testing.T) {
 
 	//input := &kazooapi.Account{ID: "qe0ade400015367f0069d6dfbdca072a"}
 
-	resp, err := clt.PhoneNumbersAPI.DeletePhoneNumber(ctx, "qe0ade400015367f0069d6dfbdca072a", "+74955555555")
+	resp, err := clt.PhoneNumbersAPI.DeletePhoneNumber(ctx, "qe0ade400015367f0069d6dfbdca072a", "+74955555555", false)
 	if err != nil {
 		t.Error(err)
 	}

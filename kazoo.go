@@ -143,7 +143,7 @@ func NewAPIClient(cfg *Configuration) (api *APIClient, err error) {
 		DialContext: (&net.Dialer{
 			Timeout: timeout,
 		}).DialContext,
-		TLSHandshakeTimeout: timeout,
+		TLSHandshakeTimeout:   timeout,
 		ResponseHeaderTimeout: timeout,
 	}
 
@@ -478,7 +478,7 @@ func addFile(w *multipart.Writer, fieldName, path string) error {
 //Kazoo API server for both api_key and password
 //authentication methods
 func (c *APIClient) Authenticate(ctx context.Context) error {
-	req := Request {
+	req := Request{
 		Method: "PUT",
 		CTX:    ctx,
 	}
@@ -537,7 +537,7 @@ func (c *APIClient) Authenticate(ctx context.Context) error {
 
 	authResponse, err := c.cfg.HTTPClient.Do(r)
 	//authResponse, err := c.callAPI(ctx, r)
-	if err != nil{
+	if err != nil {
 		return err
 	}
 	if authResponse != nil {
@@ -559,7 +559,7 @@ func (c *APIClient) Authenticate(ctx context.Context) error {
 		return nil
 
 	default:
-		return NewError("AuthenticationError", string(authResponse.StatusCode), nil)
+		return NewError("AuthenticationError", fmt.Sprint(authResponse.StatusCode), nil)
 	}
 
 	//return nil

@@ -48,7 +48,7 @@ func SprintError(code, message, extra string, origErr error) string {
 		msg = fmt.Sprintf("%s\n\t%s", msg, extra)
 	}
 	if origErr != nil {
-		msg = fmt.Sprintf("%s\ncaused by: %w", msg, origErr)
+		msg = fmt.Sprintf("%s\ncaused by: %s", msg, origErr)
 	}
 	return msg
 }
