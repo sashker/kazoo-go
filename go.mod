@@ -1,8 +1,11 @@
-module gitlab.com/sashker/kazoo-go
+module github.com/sashker/kazoo-go
 
 go 1.24
 
-require github.com/stretchr/testify v1.4.0
+require (
+	github.com/stretchr/testify v1.4.0
+	github.com/sashker/kazoo-go v1.0.10
+)
 
 require (
 	github.com/davecgh/go-spew v1.1.0 // indirect

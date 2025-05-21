@@ -6,8 +6,8 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	kazooapi "github.com/sashker/kazoo-go"
 	"github.com/stretchr/testify/assert"
-	kazooapi "gitlab.com/bmitelecom/kazoo-go"
 )
 
 func MockKazooServer(t *testing.T, body string) *httptest.Server {

@@ -2,20 +2,20 @@ package kazooapi_test
 
 import (
 	"context"
-	"github.com/stretchr/testify/assert"
-	kazooapi "gitlab.com/bmitelecom/kazoo-go"
 	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
-)
 
+	kazooapi "github.com/sashker/kazoo-go"
+	"github.com/stretchr/testify/assert"
+)
 
 func TestLimitsAPIService_GetLimits(t *testing.T) {
 	ctx := context.Background()
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/v2/accounts/qe0ade400015367f0069d6dfbdca072a/limits", func(w http.ResponseWriter, r *http.Request){
+	mux.HandleFunc("/v2/accounts/qe0ade400015367f0069d6dfbdca072a/limits", func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Add("Server", "Cowboy")
 		w.Header().Add("Content-Language", "en")
@@ -45,7 +45,7 @@ func TestLimitsAPIService_GetLimits(t *testing.T) {
 		io.WriteString(w, body)
 
 	})
-	mux.HandleFunc("/v2/api_auth", func(w http.ResponseWriter, r *http.Request){
+	mux.HandleFunc("/v2/api_auth", func(w http.ResponseWriter, r *http.Request) {
 
 		w.Header().Add("Server", "Cowboy")
 		w.Header().Add("Content-Language", "en")
@@ -134,7 +134,6 @@ func TestLimitsAPIService_GetLimits(t *testing.T) {
 	srv := httptest.NewServer(mux)
 	defer srv.Close()
 
-
 	cfg := kazooapi.NewConfiguration()
 	cfg.APIKey = "e0a582bad3fb7fe3897ebf70cc0f542bbdc9a17895764266f094b953254d3d84"
 	cfg.BasePath = srv.URL + "/v2"
@@ -153,5 +152,5 @@ func TestLimitsAPIService_GetLimits(t *testing.T) {
 
 	t.Logf("Response data %#v", resp)
 
-	assert.Equal(t, int64(1000), resp.TwowayTrunks, "ID's should be equal" )
+	assert.Equal(t, int64(1000), resp.TwowayTrunks, "ID's should be equal")
 }

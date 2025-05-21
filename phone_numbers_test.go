@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
+	kazooapi "github.com/sashker/kazoo-go"
 	"github.com/stretchr/testify/assert"
-	kazooapi "gitlab.com/bmitelecom/kazoo-go"
 )
 
 func TestPhoneNumbersService_DeletePhoneNumber(t *testing.T) {
