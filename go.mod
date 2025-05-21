@@ -1,4 +1,4 @@
-module gitlab.com/bmitelecom/kazoo-go
+module gitlab.com/sashker/kazoo-go
 
 go 1.24
 
